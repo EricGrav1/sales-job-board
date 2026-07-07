@@ -43,7 +43,21 @@ export const profileUpsertSchema = z
     }
   );
 
+export const performanceRecordSchema = z.object({
+  periodLabel: z.string().trim().min(1).max(120),
+  quotaAttainmentPct: z.number().int().min(0).max(500).nullable().optional(),
+  rank: z.number().int().nullable().optional(),
+  teamSize: z.number().int().nullable().optional(),
+  notes: z.string().trim().max(280).nullable().optional()
+});
+
+export const recordParamsSchema = z.object({
+  id: z.string().uuid()
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
 export type ProfileUpsertInput = z.infer<typeof profileUpsertSchema>;
+export type PerformanceRecordInput = z.infer<typeof performanceRecordSchema>;
+export type RecordParamsInput = z.infer<typeof recordParamsSchema>;

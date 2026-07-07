@@ -75,6 +75,14 @@ export type ProfilePayload = {
   remoteOk?: boolean;
 };
 
+export type PerformanceRecordPayload = {
+  periodLabel: string;
+  quotaAttainmentPct?: number | null;
+  rank?: number | null;
+  teamSize?: number | null;
+  notes?: string | null;
+};
+
 export async function apiRequest<T>(path: string, options: RequestInit = {}) {
   const response = await fetch(path, {
     credentials: "include",

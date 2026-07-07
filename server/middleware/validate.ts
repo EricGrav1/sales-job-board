@@ -15,3 +15,17 @@ export function validateBody<TSchema extends ZodTypeAny>(schema: TSchema) {
     return next();
   };
 }
+
+export function validateParams<TSchema extends ZodTypeAny>(schema: TSchema) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const parsed = schema.safeParse(req.params);
+    if (!parsed.success) {
+      return res.status(400).json({
+        error: "Validation failed",
+        fields: parsed.error.flatten().fieldErrors
+      });
+    }
+
+    return next();
+  };
+}
