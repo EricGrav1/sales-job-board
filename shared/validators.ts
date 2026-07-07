@@ -46,3 +46,4 @@ export const profileUpsertSchema = z
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
+export type ProfileUpsertInput = z.infer<typeof profileUpsertSchema>;

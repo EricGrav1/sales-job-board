@@ -1,13 +1,15 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
+import { ProfileEditPage } from "./pages/ProfileEditPage";
+import { PublicProfilePage } from "./pages/PublicProfilePage";
 import "./styles.css";
 
 function LandingPage() {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
       <section className="mx-auto flex min-h-screen max-w-5xl flex-col justify-center px-6 py-16">
-        <p className="mb-4 text-sm font-semibold uppercase tracking-wide text-accent">Verified rep profiles</p>
+        <p className="mb-4 text-sm font-semibold uppercase text-accent">Verified rep profiles</p>
         <h1 className="max-w-3xl text-5xl font-semibold leading-tight">Sales Job Board</h1>
         <p className="mt-5 max-w-2xl text-lg text-slate-700">
           Create a proof-backed sales profile for hiring teams that care about verified performance.
@@ -46,7 +48,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Route path="/signup" element={<PlaceholderPage title="Create account" />} />
         <Route path="/login" element={<PlaceholderPage title="Log in" />} />
         <Route path="/verify" element={<PlaceholderPage title="Verify email" />} />
+        <Route path="/dashboard/edit" element={<ProfileEditPage />} />
         <Route path="/dashboard/*" element={<PlaceholderPage title="Dashboard" />} />
+        <Route path="/r/:slug" element={<PublicProfilePage />} />
         <Route path="/admin" element={<PlaceholderPage title="Admin" />} />
       </Routes>
     </BrowserRouter>

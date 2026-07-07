@@ -7,6 +7,7 @@ import { getEnv } from "./config/env";
 import { pool } from "./db";
 import { authRouter } from "./routes/auth";
 import { profileRouter } from "./routes/profile";
+import { publicProfileRouter } from "./routes/publicProfile";
 
 export function createApp() {
   const env = getEnv();
@@ -46,6 +47,7 @@ export function createApp() {
   });
   app.use("/api/auth", authRouter);
   app.use("/api/profile", profileRouter);
+  app.use("/api/r", publicProfileRouter);
 
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
     console.error(error);
