@@ -1,0 +1,39 @@
+import type { NextFunction, Request, Response } from "express";
+import { eq } from "drizzle-orm";
+import { db } from "../db";
+import { users } from "../../shared/schema";
+
+export async function requireAuth(req: Request, res: Response, next: NextFunction) {
+  const userId = req.session.userId;
+  if (!userId) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId)
+  });
+
+  if (!user) {
+    req.session.destroy(() => undefined);
+    return res.status(401).json({ error: "Authentication required" });
+  }
+
+  req.currentUser = user;
+  return next();
+}
+
+export function requireEmailVerified(req: Request, res: Response, next: NextFunction) {
+  if (!req.currentUser?.emailVerifiedAt) {
+    return res.status(403).json({ error: "Email verification required" });
+  }
+
+  return next();
+}
+
+export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (req.currentUser?.role !== "admin") {
+    return res.status(403).json({ error: "Admin access required" });
+  }
+
+  return next();
+}
