@@ -30,10 +30,18 @@ export function requireEmailVerified(req: Request, res: Response, next: NextFunc
   return next();
 }
 
-export function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  if (req.currentUser?.role !== "admin") {
+export async function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  const userId = req.session.userId;
+  const user = userId
+    ? await db.query.users.findFirst({
+        where: eq(users.id, userId)
+      })
+    : undefined;
+
+  if (!user || user.role !== "admin") {
     return res.status(403).json({ error: "Admin access required" });
   }
 
+  req.currentUser = user;
   return next();
 }

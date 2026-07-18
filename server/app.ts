@@ -5,6 +5,7 @@ import session from "express-session";
 import helmet from "helmet";
 import { getEnv } from "./config/env";
 import { pool } from "./db";
+import { adminRouter } from "./routes/admin";
 import { authRouter } from "./routes/auth";
 import { profileRouter } from "./routes/profile";
 import { proofsRouter } from "./routes/proofs";
@@ -51,6 +52,7 @@ export function createApp() {
   app.use("/api/profile", profileRouter);
   app.use("/api/records", recordsRouter);
   app.use("/api/proofs", proofsRouter);
+  app.use("/api/admin", adminRouter);
   app.use("/api/r", publicProfileRouter);
 
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {

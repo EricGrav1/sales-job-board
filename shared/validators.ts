@@ -77,6 +77,16 @@ export const proofParamsSchema = z.object({
   id: z.string().uuid()
 });
 
+export const proofStatusSchema = z.enum(["pending", "approved", "rejected"]);
+
+export const adminProofsQuerySchema = z.object({
+  status: proofStatusSchema.default("pending")
+});
+
+export const proofRejectSchema = z.object({
+  reason: z.string().trim().min(1).max(1000)
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
@@ -85,3 +95,5 @@ export type PerformanceRecordInput = z.infer<typeof performanceRecordSchema>;
 export type RecordParamsInput = z.infer<typeof recordParamsSchema>;
 export type ProofUploadInput = z.infer<typeof proofUploadSchema>;
 export type ProofParamsInput = z.infer<typeof proofParamsSchema>;
+export type AdminProofsQueryInput = z.infer<typeof adminProofsQuerySchema>;
+export type ProofRejectInput = z.infer<typeof proofRejectSchema>;
