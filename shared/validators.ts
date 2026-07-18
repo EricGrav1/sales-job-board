@@ -55,9 +55,33 @@ export const recordParamsSchema = z.object({
   id: z.string().uuid()
 });
 
+export const proofTypeSchema = z.enum(["leaderboard", "commission", "award", "other"]);
+
+export const MAX_PROOF_SIZE_BYTES = 10 * 1024 * 1024;
+
+export const proofContentTypeSchema = z.enum([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "application/pdf"
+]);
+
+export const proofUploadSchema = z.object({
+  type: proofTypeSchema,
+  contentType: proofContentTypeSchema,
+  sizeBytes: z.number().int().positive().max(MAX_PROOF_SIZE_BYTES)
+});
+
+export const proofParamsSchema = z.object({
+  id: z.string().uuid()
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
 export type ProfileUpsertInput = z.infer<typeof profileUpsertSchema>;
 export type PerformanceRecordInput = z.infer<typeof performanceRecordSchema>;
 export type RecordParamsInput = z.infer<typeof recordParamsSchema>;
+export type ProofUploadInput = z.infer<typeof proofUploadSchema>;
+export type ProofParamsInput = z.infer<typeof proofParamsSchema>;

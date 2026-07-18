@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "../db";
+import { createSignedGetUrl } from "../services/r2";
 import { asyncHandler } from "../utils/http";
 import { events, performanceRecords, proofItems, repProfiles, type RepProfile } from "../../shared/schema";
 
@@ -64,14 +65,16 @@ publicProfileRouter.get(
         notes: record.notes,
         createdAt: record.createdAt
       })),
-      proofs: proofs.map((proof) => ({
-        id: proof.id,
-        type: proof.type,
-        status: proof.status,
-        createdAt: proof.createdAt,
-        assetUrl: null,
-        thumbUrl: null
-      }))
+      proofs: await Promise.all(
+        proofs.map(async (proof) => ({
+          id: proof.id,
+          type: proof.type,
+          status: proof.status,
+          createdAt: proof.createdAt,
+          assetUrl: await createSignedGetUrl(proof.redactedKey ?? proof.originalKey),
+          thumbUrl: proof.thumbKey ? await createSignedGetUrl(proof.thumbKey) : null
+        }))
+      )
     });
   })
 );

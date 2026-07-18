@@ -7,6 +7,7 @@ import { getEnv } from "./config/env";
 import { pool } from "./db";
 import { authRouter } from "./routes/auth";
 import { profileRouter } from "./routes/profile";
+import { proofsRouter } from "./routes/proofs";
 import { publicProfileRouter } from "./routes/publicProfile";
 import { recordsRouter } from "./routes/records";
 
@@ -49,6 +50,7 @@ export function createApp() {
   app.use("/api/auth", authRouter);
   app.use("/api/profile", profileRouter);
   app.use("/api/records", recordsRouter);
+  app.use("/api/proofs", proofsRouter);
   app.use("/api/r", publicProfileRouter);
 
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
