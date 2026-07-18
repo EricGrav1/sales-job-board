@@ -10,7 +10,7 @@ Rules:
 - If an acceptance criterion cannot be verified without external credentials (R2, Resend), implement against the real SDKs per the spec, but provide a dev-mode fallback ONLY where the spec explicitly allows it (e.g. "log link in dev" for verification emails), and say clearly which criteria are pending real credentials.
 
 Local environment facts:
-- PostgreSQL 16 runs locally via Homebrew (`brew services`), superuser is the macOS user (`ericgrav1`, no password), host `localhost:5432`. Databases `sales_job_board` (dev) and `sales_job_board_test` (tests) already exist. CLI tools are keg-only: use `/opt/homebrew/opt/postgresql@16/bin/psql` etc.
+- PostgreSQL 16 runs locally via Homebrew (`brew services`), superuser is the local macOS user (no password), host `localhost:5432`. Databases `sales_job_board` (dev) and `sales_job_board_test` (tests) already exist. CLI tools are keg-only: use `/opt/homebrew/opt/postgresql@16/bin/psql` etc.
 - Keep secrets in `.env` (gitignored) loaded via dotenv; `.env.example` documents every variable from SPEC.md §3.
 - Node 22 / npm 10 are installed.
 
