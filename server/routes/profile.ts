@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { desc, eq } from "drizzle-orm";
 import { db } from "../db";
-import { requireAuth, requireEmailVerified } from "../middleware/auth";
+import { requireAuth, requireEmailVerified, requireRole } from "../middleware/auth";
 import { validateBody } from "../middleware/validate";
 import { asyncHandler } from "../utils/http";
 import { performanceRecords, proofItems, repProfiles, type RepProfile } from "../../shared/schema";
@@ -9,7 +9,7 @@ import { profileUpsertSchema, type ProfileUpsertInput } from "../../shared/valid
 
 export const profileRouter = Router();
 
-profileRouter.use(asyncHandler(requireAuth), requireEmailVerified);
+profileRouter.use(asyncHandler(requireAuth), requireEmailVerified, requireRole("rep", "admin"));
 
 function slugifyDisplayName(displayName: string) {
   const slug = displayName

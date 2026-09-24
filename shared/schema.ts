@@ -3,6 +3,7 @@ import {
   boolean,
   integer,
   pgEnum,
+  primaryKey,
   pgTable,
   text,
   timestamp,
@@ -10,7 +11,7 @@ import {
   varchar
 } from "drizzle-orm/pg-core";
 
-export const userRoleEnum = pgEnum("user_role", ["rep", "admin"]);
+export const userRoleEnum = pgEnum("user_role", ["rep", "employer", "admin"]);
 export const roleTypeEnum = pgEnum("role_type", ["sdr", "ae", "am", "field", "inside", "manager", "other"]);
 export const verificationTierEnum = pgEnum("verification_tier", [
   "unverified",
@@ -136,6 +137,63 @@ export const proofItemsRelations = relations(proofItems, ({ one }) => ({
   })
 }));
 
+export const companySizeBandEnum = pgEnum("company_size_band", [
+  "1-10",
+  "11-50",
+  "51-200",
+  "201-1000",
+  "1000+"
+]);
+export const companyPlanEnum = pgEnum("company_plan", ["free", "premium"]);
+export const companyMemberRoleEnum = pgEnum("company_member_role", ["owner"]);
+
+export const companies = pgTable("companies", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  website: text("website"),
+  description: text("description"),
+  sizeBand: companySizeBandEnum("size_band"),
+  plan: companyPlanEnum("plan").notNull().default("free"),
+  premiumCurrentPeriodEnd: timestamp("premium_current_period_end", { withTimezone: true }),
+  stripeCustomerId: text("stripe_customer_id").unique(),
+  stripeSubscriptionId: text("stripe_subscription_id").unique(),
+  creditBalanceCents: integer("credit_balance_cents").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+});
+
+export const companyMembers = pgTable(
+  "company_members",
+  {
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .unique()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: companyMemberRoleEnum("role").notNull().default("owner"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => [primaryKey({ columns: [table.companyId, table.userId] })]
+);
+
+export const companiesRelations = relations(companies, ({ many }) => ({
+  members: many(companyMembers)
+}));
+
+export const companyMembersRelations = relations(companyMembers, ({ one }) => ({
+  company: one(companies, {
+    fields: [companyMembers.companyId],
+    references: [companies.id]
+  }),
+  user: one(users, {
+    fields: [companyMembers.userId],
+    references: [users.id]
+  })
+}));
+
 export const eventsRelations = relations(events, ({ one }) => ({
   actor: one(users, {
     fields: [events.actorUserId],
@@ -149,3 +207,5 @@ export type RepProfile = InferSelectModel<typeof repProfiles>;
 export type PerformanceRecord = InferSelectModel<typeof performanceRecords>;
 export type ProofItem = InferSelectModel<typeof proofItems>;
 export type Event = InferSelectModel<typeof events>;
+export type Company = InferSelectModel<typeof companies>;
+export type CompanyMember = InferSelectModel<typeof companyMembers>;

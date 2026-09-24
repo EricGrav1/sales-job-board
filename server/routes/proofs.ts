@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { Router } from "express";
 import { and, eq } from "drizzle-orm";
 import { db } from "../db";
-import { requireAuth, requireEmailVerified } from "../middleware/auth";
+import { requireAuth, requireEmailVerified, requireRole } from "../middleware/auth";
 import { uploadRateLimit } from "../middleware/rateLimit";
 import { validateBody, validateParams } from "../middleware/validate";
 import { isPdf, processProofImage } from "../services/imageProcessing";
@@ -19,7 +19,7 @@ import { proofParamsSchema, proofUploadSchema, type ProofUploadInput } from "../
 
 export const proofsRouter = Router();
 
-proofsRouter.use(asyncHandler(requireAuth), requireEmailVerified);
+proofsRouter.use(asyncHandler(requireAuth), requireEmailVerified, requireRole("rep", "admin"));
 
 const extensionByContentType: Record<ProofUploadInput["contentType"], string> = {
   "image/jpeg": "jpg",

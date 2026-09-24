@@ -6,9 +6,12 @@ const normalizedEmail = z
   .email()
   .transform((email) => email.toLowerCase());
 
+export const accountTypeSchema = z.enum(["job_seeker", "employer"]);
+
 export const registerSchema = z.object({
   email: normalizedEmail,
-  password: z.string().min(8).max(128)
+  password: z.string().min(8).max(128),
+  accountType: accountTypeSchema.default("job_seeker")
 });
 
 export const loginSchema = z.object({
@@ -87,6 +90,22 @@ export const proofRejectSchema = z.object({
   reason: z.string().trim().min(1).max(1000)
 });
 
+const httpsUrl = z
+  .string()
+  .trim()
+  .max(2048)
+  .url()
+  .refine((value) => value.startsWith("https://"), { message: "Must be an https:// URL" });
+
+export const companySizeBandSchema = z.enum(["1-10", "11-50", "51-200", "201-1000", "1000+"]);
+
+export const companyUpsertSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  website: httpsUrl.nullable().optional(),
+  description: z.string().trim().max(2000).nullable().optional(),
+  sizeBand: companySizeBandSchema.nullable().optional()
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
@@ -97,3 +116,5 @@ export type ProofUploadInput = z.infer<typeof proofUploadSchema>;
 export type ProofParamsInput = z.infer<typeof proofParamsSchema>;
 export type AdminProofsQueryInput = z.infer<typeof adminProofsQuerySchema>;
 export type ProofRejectInput = z.infer<typeof proofRejectSchema>;
+export type AccountType = z.infer<typeof accountTypeSchema>;
+export type CompanyUpsertInput = z.infer<typeof companyUpsertSchema>;
