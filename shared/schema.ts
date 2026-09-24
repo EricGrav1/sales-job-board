@@ -9,6 +9,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uuid,
   varchar
 } from "drizzle-orm/pg-core";
@@ -240,10 +241,58 @@ export function jobSearchVector(table: { title: AnyPgColumn; description: AnyPgC
   return sql`to_tsvector('english', coalesce(${table.title}, '') || ' ' || coalesce(${table.description}, '') || ' ' || coalesce(${table.location}, ''))`;
 }
 
-export const jobsRelations = relations(jobs, ({ one }) => ({
+export const applicationStatusEnum = pgEnum("application_status", [
+  "new",
+  "reviewed",
+  "interviewing",
+  "offer",
+  "hired",
+  "rejected"
+]);
+
+export const applications = pgTable(
+  "applications",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => jobs.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    profileId: uuid("profile_id").references(() => repProfiles.id, { onDelete: "set null" }),
+    fullName: varchar("full_name", { length: 120 }).notNull(),
+    phone: varchar("phone", { length: 40 }),
+    linkedinUrl: text("linkedin_url"),
+    resumeKey: text("resume_key"), // R2 key under resumes/<userId>/ — never public
+    coverNote: varchar("cover_note", { length: 3000 }),
+    status: applicationStatusEnum("status").notNull().default("new"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => [unique("applications_job_user_unique").on(table.jobId, table.userId), index("applications_user_idx").on(table.userId)]
+);
+
+export const jobsRelations = relations(jobs, ({ one, many }) => ({
   company: one(companies, {
     fields: [jobs.companyId],
     references: [companies.id]
+  }),
+  applications: many(applications)
+}));
+
+export const applicationsRelations = relations(applications, ({ one }) => ({
+  job: one(jobs, {
+    fields: [applications.jobId],
+    references: [jobs.id]
+  }),
+  user: one(users, {
+    fields: [applications.userId],
+    references: [users.id]
+  }),
+  profile: one(repProfiles, {
+    fields: [applications.profileId],
+    references: [repProfiles.id]
   })
 }));
 
@@ -279,3 +328,4 @@ export type Event = InferSelectModel<typeof events>;
 export type Company = InferSelectModel<typeof companies>;
 export type CompanyMember = InferSelectModel<typeof companyMembers>;
 export type Job = InferSelectModel<typeof jobs>;
+export type Application = InferSelectModel<typeof applications>;

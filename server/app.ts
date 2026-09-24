@@ -6,6 +6,7 @@ import helmet from "helmet";
 import { getEnv } from "./config/env";
 import { pool } from "./db";
 import { adminRouter } from "./routes/admin";
+import { applyHandlers, seekerApplicationsRouter } from "./routes/applications";
 import { authRouter } from "./routes/auth";
 import { employerRouter } from "./routes/employer";
 import { jobsRouter } from "./routes/jobs";
@@ -56,7 +57,9 @@ export function createApp() {
   app.use("/api/proofs", proofsRouter);
   app.use("/api/admin", adminRouter);
   app.use("/api/employer", employerRouter);
+  app.post("/api/jobs/:slug/apply", ...applyHandlers);
   app.use("/api/jobs", jobsRouter);
+  app.use("/api/applications", seekerApplicationsRouter);
   app.use("/api/r", publicProfileRouter);
 
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {

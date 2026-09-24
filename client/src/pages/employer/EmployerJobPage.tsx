@@ -4,6 +4,7 @@ import { PageContainer } from "../../components/Layout";
 import { Alert, Badge, Button, Card, readApiError } from "../../components/ui";
 import { ApiError, apiRequest } from "../../lib/api";
 import { formatPay, type EmployerJob } from "../../lib/jobs";
+import { ApplicantsPanel } from "./ApplicantsPanel";
 
 export function EmployerJobPage() {
   const { id } = useParams();
@@ -103,8 +104,11 @@ export function EmployerJobPage() {
       <div id="job-sections" className="mt-6 space-y-6">
         <Card>
           <h2 className="text-lg font-semibold">Performance</h2>
-          <p className="mt-2 text-sm text-slate-600">{job.stats?.views ?? 0} views</p>
+          <p className="mt-2 text-sm text-slate-600">
+            {job.stats?.views ?? 0} views · {job.stats?.applications ?? 0} applicants
+          </p>
         </Card>
+        {job.applyMethod === "platform" ? <ApplicantsPanel jobId={job.id} /> : null}
       </div>
     </PageContainer>
   );

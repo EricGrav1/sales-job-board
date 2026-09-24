@@ -24,8 +24,15 @@ export function publicUser(user: {
   };
 }
 
-export function isUniqueViolation(error: unknown) {
-  return Boolean(error && typeof error === "object" && "code" in error && error.code === "23505");
+// Postgres unique_violation. Drizzle wraps driver errors, so the pg error may be on `cause`.
+export function isUniqueViolation(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+  if ("code" in error && error.code === "23505") {
+    return true;
+  }
+  return "cause" in error ? isUniqueViolation(error.cause) : false;
 }
 
 export function slugify(value: string, fallback: string) {

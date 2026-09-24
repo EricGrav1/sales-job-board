@@ -165,6 +165,43 @@ export const jobSearchQuerySchema = z.object({
   page: z.coerce.number().int().min(1).max(500).default(1)
 });
 
+export const MAX_RESUME_SIZE_BYTES = 5 * 1024 * 1024;
+
+export const resumeUploadSchema = z.object({
+  contentType: z.literal("application/pdf"),
+  sizeBytes: z.number().int().positive().max(MAX_RESUME_SIZE_BYTES)
+});
+
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .nullable()
+    .optional()
+    .transform((value) => (value ? value : null));
+
+export const applySchema = z.object({
+  fullName: z.string().trim().min(1).max(120),
+  phone: optionalText(40),
+  linkedinUrl: z
+    .string()
+    .trim()
+    .max(300)
+    .regex(/^https:\/\/([a-z]{2,3}\.)?linkedin\.com\/\S+$/i, "Must be an https://linkedin.com/... URL")
+    .nullable()
+    .optional()
+    .or(z.literal("").transform(() => null)),
+  resumeKey: z.string().max(300).nullable().optional(),
+  coverNote: optionalText(3000)
+});
+
+export const applicationStatusSchema = z.enum(["new", "reviewed", "interviewing", "offer", "hired", "rejected"]);
+
+export const applicationStatusUpdateSchema = z.object({
+  status: applicationStatusSchema
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
@@ -179,3 +216,4 @@ export type AccountType = z.infer<typeof accountTypeSchema>;
 export type CompanyUpsertInput = z.infer<typeof companyUpsertSchema>;
 export type JobUpsertInput = z.infer<typeof jobUpsertSchema>;
 export type JobSearchQuery = z.infer<typeof jobSearchQuerySchema>;
+export type ApplyInput = z.infer<typeof applySchema>;

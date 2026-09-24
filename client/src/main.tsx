@@ -9,6 +9,7 @@ import { EmployerJobPage } from "./pages/employer/EmployerJobPage";
 import { JobFormPage } from "./pages/employer/JobFormPage";
 import { JobDetailPage } from "./pages/JobDetailPage";
 import { JobsPage } from "./pages/JobsPage";
+import { MyApplicationsPage } from "./pages/seeker/MyApplicationsPage";
 import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { ProfileEditPage } from "./pages/ProfileEditPage";
@@ -63,6 +64,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                 element={<RequireRole roles={["employer"]}>{element}</RequireRole>}
               />
             ))}
+            <Route
+              path="/dashboard/applications"
+              element={
+                <RequireRole roles={["rep", "admin"]}>
+                  <MyApplicationsPage />
+                </RequireRole>
+              }
+            />
             <Route path="/dashboard/*" element={<PlaceholderPage title="Dashboard" />} />
             <Route path="/admin" element={<PlaceholderPage title="Admin" />} />
             <Route path="*" element={<NotFoundPage />} />

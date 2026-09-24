@@ -9,7 +9,7 @@ import { getEnv } from "../config/env";
 import { findCompanyForUser } from "../services/companies";
 import { sendVerificationEmail } from "../services/email";
 import { createEmailVerificationToken, verifyEmailVerificationToken } from "../services/verificationToken";
-import { asyncHandler, publicUser } from "../utils/http";
+import { asyncHandler, isUniqueViolation, publicUser } from "../utils/http";
 import { events, repProfiles, users } from "../../shared/schema";
 import { loginSchema, registerSchema, verifyEmailSchema } from "../../shared/validators";
 
@@ -79,7 +79,7 @@ authRouter.post(
 
       return res.status(201).json({ user: publicUser(user) });
     } catch (error) {
-      if (error && typeof error === "object" && "code" in error && error.code === "23505") {
+      if (isUniqueViolation(error)) {
         return res.status(409).json({ error: "Email already registered" });
       }
       throw error;

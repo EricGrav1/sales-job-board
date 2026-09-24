@@ -7,7 +7,7 @@ import { isJobOpen, publishBlockers } from "../services/jobRules";
 import { planFor } from "../services/plans";
 import { asyncHandler, slugify } from "../utils/http";
 import { JOB_LISTING_DAYS } from "../../shared/jobs";
-import { companies, events, jobs, type Job } from "../../shared/schema";
+import { applications, companies, events, jobs, type Job } from "../../shared/schema";
 import { idParamsSchema, jobUpsertSchema, type JobUpsertInput } from "../../shared/validators";
 
 // Mounted under /api/employer/jobs after requireCompany, so req.company is always set.
@@ -46,6 +46,18 @@ async function findCompanyJob(companyId: string, jobId: string) {
   });
 }
 
+async function applicationCounts(jobIds: string[]) {
+  if (jobIds.length === 0) {
+    return new Map<string, number>();
+  }
+  const rows = await db
+    .select({ jobId: applications.jobId, total: count() })
+    .from(applications)
+    .where(inArray(applications.jobId, jobIds))
+    .groupBy(applications.jobId);
+  return new Map(rows.map((row) => [row.jobId, row.total]));
+}
+
 async function viewCounts(jobIds: string[]) {
   if (jobIds.length === 0) {
     return new Map<string, number>();
@@ -71,12 +83,13 @@ employerJobsRouter.get(
       where: eq(jobs.companyId, req.company!.id),
       orderBy: desc(jobs.createdAt)
     });
-    const views = await viewCounts(companyJobs.map((job) => job.id));
+    const jobIds = companyJobs.map((job) => job.id);
+    const [views, applicants] = await Promise.all([viewCounts(jobIds), applicationCounts(jobIds)]);
 
     return res.status(200).json({
       jobs: companyJobs.map((job) => ({
         ...withState(job),
-        stats: { views: views.get(job.id) ?? 0 }
+        stats: { views: views.get(job.id) ?? 0, applications: applicants.get(job.id) ?? 0 }
       })),
       activeJobLimit: planFor(req.company!).activeJobLimit
     });
@@ -110,9 +123,9 @@ employerJobsRouter.get(
     if (!job) {
       return res.status(404).json({ error: "Job not found" });
     }
-    const views = await viewCounts([job.id]);
+    const [views, applicants] = await Promise.all([viewCounts([job.id]), applicationCounts([job.id])]);
     return res.status(200).json({
-      job: { ...withState(job), stats: { views: views.get(job.id) ?? 0 } },
+      job: { ...withState(job), stats: { views: views.get(job.id) ?? 0, applications: applicants.get(job.id) ?? 0 } },
       publishBlockers: publishBlockers(job)
     });
   })

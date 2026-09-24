@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { requireAuth, requireEmailVerified, requireRole } from "../middleware/auth";
 import { validateBody } from "../middleware/validate";
+import { employerApplicationsRouter } from "./applications";
 import { employerJobsRouter } from "./employerJobs";
 import { findAvailableCompanySlug, findCompanyForUser, requireCompany } from "../services/companies";
 import { asyncHandler, isUniqueViolation } from "../utils/http";
@@ -84,4 +85,7 @@ employerRouter.put(
   })
 );
 
-employerRouter.use("/jobs", asyncHandler(requireCompany), employerJobsRouter);
+// Everything below needs the caller's company (the /company routes above handle their own).
+employerRouter.use(asyncHandler(requireCompany));
+employerRouter.use("/jobs", employerJobsRouter);
+employerRouter.use(employerApplicationsRouter);
