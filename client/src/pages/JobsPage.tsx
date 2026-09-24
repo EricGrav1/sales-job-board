@@ -81,7 +81,8 @@ export function JobsPage() {
         <div className="mt-6">
           <div className="flex items-center justify-between text-sm text-slate-600">
             <p aria-live="polite">
-              {data.total} job{data.total === 1 ? "" : "s"}
+              {/* Sponsored jobs are excluded from the organic total, so add them back for the visible count. */}
+              {data.total + data.sponsored.length} job{data.total + data.sponsored.length === 1 ? "" : "s"}
             </p>
             {hasFilters ? (
               <button type="button" className="font-semibold text-accent" onClick={() => { setDraft({ q: "", location: "" }); setSearchParams(new URLSearchParams()); }}>

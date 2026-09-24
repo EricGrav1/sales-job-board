@@ -5,6 +5,7 @@ import { getEnv } from "../server/config/env";
 import { closeDb, db } from "../server/db";
 import { recomputeVerificationTier } from "../server/services/verificationTier";
 import { performanceRecords, proofItems, repProfiles, users } from "../shared/schema";
+import { EMPLOYER_PASSWORD, seedJobBoard } from "./seedJobBoard";
 
 const ADMIN_PASSWORD = "admin1234!";
 const REP_PASSWORD = "rep1234!";
@@ -359,9 +360,10 @@ async function main() {
 
   console.log(`Seeding database: ${env.DATABASE_URL}`);
 
-  const [adminPasswordHash, repPasswordHash] = await Promise.all([
+  const [adminPasswordHash, repPasswordHash, employerPasswordHash] = await Promise.all([
     bcrypt.hash(ADMIN_PASSWORD, 12),
-    bcrypt.hash(REP_PASSWORD, 12)
+    bcrypt.hash(REP_PASSWORD, 12),
+    bcrypt.hash(EMPLOYER_PASSWORD, 12)
   ]);
 
   const admin = await upsertUser(env.ADMIN_EMAIL, adminPasswordHash, "admin");
@@ -375,6 +377,11 @@ async function main() {
 
   console.table(summary);
   console.log(`Seeded 1 admin + ${summary.length} rep profiles.`);
+
+  const board = await seedJobBoard(employerPasswordHash);
+  console.log(`Employers: ${board.companies.join(", ")} / ${EMPLOYER_PASSWORD}`);
+  console.table(board.jobs);
+  console.log(`Seeded ${board.companies.length} companies + ${board.jobs.length} jobs.`);
 }
 
 main()

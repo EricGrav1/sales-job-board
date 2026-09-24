@@ -288,7 +288,7 @@ Implement in order. (Phase 1 used M1–M6.)
 - [ ] `/employer/billing` page works
 
 **M12 — Polish + seed**
-- [ ] `scripts/seed.ts` also creates 3 companies (1 premium, with credits and an active promotion) and 15 jobs spanning all levels, from entry to executive
+- [ ] `scripts/seed.ts` also creates 3 employer accounts and companies (2 premium, one with credits and active promotions; 1 free with a single job, respecting plan limits) and 15 jobs spanning all levels, from entry to executive
 - [ ] All new pages usable at 375px width
 - [ ] Employer dashboard stats match the DB (test)
 
