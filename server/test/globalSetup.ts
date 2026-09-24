@@ -7,7 +7,8 @@ const { Pool } = pg;
 
 export default async function globalSetup() {
   const pool = new Pool({
-    connectionString: "postgres://ericgrav1@localhost:5432/sales_job_board_test"
+    connectionString:
+      process.env.TEST_DATABASE_URL ?? "postgres://localhost:5432/sales_job_board_test"
   });
   const db = drizzle(pool);
 

@@ -1,5 +1,6 @@
 process.env.NODE_ENV = "test";
-process.env.DATABASE_URL = "postgres://ericgrav1@localhost:5432/sales_job_board_test";
+process.env.DATABASE_URL =
+  process.env.TEST_DATABASE_URL ?? "postgres://localhost:5432/sales_job_board_test";
 process.env.SESSION_SECRET = "test-session-secret-with-more-than-thirty-two-characters";
 process.env.R2_ACCOUNT_ID = "placeholder-r2-account-id";
 process.env.R2_ACCESS_KEY_ID = "placeholder-r2-access-key-id";
@@ -7,4 +8,4 @@ process.env.R2_SECRET_ACCESS_KEY = "placeholder-r2-secret-access-key";
 process.env.R2_BUCKET = "placeholder-r2-bucket";
 process.env.RESEND_API_KEY = "placeholder-resend-api-key";
 process.env.APP_URL = "http://localhost:5173";
-process.env.ADMIN_EMAIL = "ericgrav1@gmail.com";
+process.env.ADMIN_EMAIL = "admin@example.com";

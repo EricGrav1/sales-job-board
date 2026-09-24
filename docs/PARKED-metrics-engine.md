@@ -1,5 +1,5 @@
 # BUILD SPEC v2 — Sales Job Board, Phase 2 (Two-Sided Marketplace + Metrics Engine)
-*Status: **DRAFT, not approved.** Open questions are in §12. Nothing here is built until the owner answers §12 and this file replaces or extends `SPEC.md`. Until then `SPEC.md` (Phase 1) stays the single source of truth for coding agents.*
+*Status: **PARKED** (2026-09-24). Owner chose to build the employer-paid job board first (see `SPEC.md`). Revisit after the job board ships. Owner answers so far: public must NOT see rep dollar figures (premium feature later); Salesforce before HubSpot when imports resume; metrics focus on SDR-level roles first.*
 
 *Background research: `docs/market-research.md`.*
 
