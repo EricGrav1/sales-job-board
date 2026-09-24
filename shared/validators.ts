@@ -7,6 +7,7 @@ import {
   jobLevelValues,
   workplaceValues
 } from "./jobs";
+import { MAX_CPC_CENTS, MAX_DAILY_BUDGET_CENTS, MIN_CPC_CENTS, MIN_DAILY_BUDGET_CENTS } from "./promotions";
 
 const normalizedEmail = z
   .string()
@@ -202,6 +203,21 @@ export const applicationStatusUpdateSchema = z.object({
   status: applicationStatusSchema
 });
 
+export const clickSchema = z.object({
+  clickToken: z.string().min(1).max(300)
+});
+
+export const promotionUpsertSchema = z
+  .object({
+    status: z.enum(["active", "paused"]),
+    dailyBudgetCents: z.number().int().min(MIN_DAILY_BUDGET_CENTS).max(MAX_DAILY_BUDGET_CENTS),
+    cpcCents: z.number().int().min(MIN_CPC_CENTS).max(MAX_CPC_CENTS)
+  })
+  .refine((data) => data.cpcCents <= data.dailyBudgetCents, {
+    message: "Cost per click can't exceed the daily budget",
+    path: ["cpcCents"]
+  });
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
@@ -217,3 +233,4 @@ export type CompanyUpsertInput = z.infer<typeof companyUpsertSchema>;
 export type JobUpsertInput = z.infer<typeof jobUpsertSchema>;
 export type JobSearchQuery = z.infer<typeof jobSearchQuerySchema>;
 export type ApplyInput = z.infer<typeof applySchema>;
+export type PromotionUpsertInput = z.infer<typeof promotionUpsertSchema>;

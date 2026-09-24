@@ -5,6 +5,7 @@ import { Alert, Badge, Button, Card, readApiError } from "../../components/ui";
 import { ApiError, apiRequest } from "../../lib/api";
 import { formatPay, type EmployerJob } from "../../lib/jobs";
 import { ApplicantsPanel } from "./ApplicantsPanel";
+import { PromotePanel } from "./PromotePanel";
 
 export function EmployerJobPage() {
   const { id } = useParams();
@@ -108,6 +109,7 @@ export function EmployerJobPage() {
             {job.stats?.views ?? 0} views · {job.stats?.applications ?? 0} applicants
           </p>
         </Card>
+        <PromotePanel jobId={job.id} live={live} />
         {job.applyMethod === "platform" ? <ApplicantsPanel jobId={job.id} /> : null}
       </div>
     </PageContainer>

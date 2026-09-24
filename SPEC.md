@@ -221,8 +221,8 @@ stripeEvents: { id text pk (Stripe event id), type text, processedAt timestamp }
 1. Verify `clickToken` HMAC and age ≤ 30 min, and that its job matches `:slug`. If invalid, return 204 with no charge.
 2. `viewerHash` = HMAC of the user id if logged in, else IP + user-agent.
 3. Lock the company row (`SELECT … FOR UPDATE`).
-4. Not billable, recorded with `chargedCents = 0`, if any of these is true:
-   - the viewer is a member of the job's company
+4. If the viewer is a member of the job's company, stop: employers checking their own listing are neither billed nor counted.
+   Otherwise the click is **not billable** (recorded with `chargedCents = 0`) if any of these is true:
    - the promotion is paused
    - the job is closed or expired
    - today's `spendCents + cpc > dailyBudgetCents`
@@ -274,7 +274,7 @@ Implement in order. (Phase 1 used M1–M6.)
 **M10 — Sponsored jobs**
 - [ ] Promotion upsert validates the budget and CPC bounds; activation requires a published job
 - [ ] Sponsored slot shows only eligible promotions (active, funded, under budget, matching filters), max 3, highest CPC first, labeled
-- [ ] Impressions counted; a click charges the CPC once per viewer per day; the company's own clicks are free
+- [ ] Impressions counted; a click charges the CPC once per viewer per day; the company's own clicks are neither billed nor counted
 - [ ] Charging stops exactly at the daily budget and never takes the balance below 0 (tests)
 - [ ] Forged or expired click tokens charge nothing (test)
 - [ ] Promote panel + stats on `/employer/jobs/:id`

@@ -29,6 +29,13 @@
       "when": 1790215402491,
       "tag": "0003_m9_applications",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790215862138,
+      "tag": "0004_m10_sponsored",
+      "breakpoints": true
     }
   ]
 }

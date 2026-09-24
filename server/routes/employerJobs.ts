@@ -1,14 +1,21 @@
 import { randomBytes } from "node:crypto";
 import { Router } from "express";
-import { and, count, desc, eq, gt, inArray, ne } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, gte, inArray, ne } from "drizzle-orm";
 import { db } from "../db";
 import { validateBody, validateParams } from "../middleware/validate";
 import { isJobOpen, publishBlockers } from "../services/jobRules";
 import { planFor } from "../services/plans";
+import { promotionTotalsByJob, utcDay } from "../services/sponsored";
 import { asyncHandler, slugify } from "../utils/http";
 import { JOB_LISTING_DAYS } from "../../shared/jobs";
-import { applications, companies, events, jobs, type Job } from "../../shared/schema";
-import { idParamsSchema, jobUpsertSchema, type JobUpsertInput } from "../../shared/validators";
+import { applications, companies, events, jobs, promotionDailyStats, promotions, type Job } from "../../shared/schema";
+import {
+  idParamsSchema,
+  jobUpsertSchema,
+  promotionUpsertSchema,
+  type JobUpsertInput,
+  type PromotionUpsertInput
+} from "../../shared/validators";
 
 // Mounted under /api/employer/jobs after requireCompany, so req.company is always set.
 export const employerJobsRouter = Router();
@@ -84,12 +91,20 @@ employerJobsRouter.get(
       orderBy: desc(jobs.createdAt)
     });
     const jobIds = companyJobs.map((job) => job.id);
-    const [views, applicants] = await Promise.all([viewCounts(jobIds), applicationCounts(jobIds)]);
+    const [views, applicants, promoted] = await Promise.all([
+      viewCounts(jobIds),
+      applicationCounts(jobIds),
+      promotionTotalsByJob(jobIds)
+    ]);
 
     return res.status(200).json({
       jobs: companyJobs.map((job) => ({
         ...withState(job),
-        stats: { views: views.get(job.id) ?? 0, applications: applicants.get(job.id) ?? 0 }
+        stats: {
+          views: views.get(job.id) ?? 0,
+          applications: applicants.get(job.id) ?? 0,
+          ...(promoted.get(job.id) ?? { impressions: 0, clicks: 0, spendCents: 0 })
+        }
       })),
       activeJobLimit: planFor(req.company!).activeJobLimit
     });
@@ -244,5 +259,65 @@ employerJobsRouter.post(
       return res.status(404).json({ error: "Job not found" });
     }
     return res.status(200).json({ job: withState(job) });
+  })
+);
+
+employerJobsRouter.get(
+  "/:id/promotion",
+  validateParams(idParamsSchema),
+  asyncHandler(async (req, res) => {
+    const job = await findCompanyJob(req.company!.id, String(req.params.id));
+    if (!job) {
+      return res.status(404).json({ error: "Job not found" });
+    }
+
+    const promotion = await db.query.promotions.findFirst({ where: eq(promotions.jobId, job.id) });
+    const since = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const daily = promotion
+      ? await db
+          .select({
+            day: promotionDailyStats.day,
+            impressions: promotionDailyStats.impressions,
+            clicks: promotionDailyStats.clicks,
+            spendCents: promotionDailyStats.spendCents
+          })
+          .from(promotionDailyStats)
+          .where(and(eq(promotionDailyStats.promotionId, promotion.id), gte(promotionDailyStats.day, since)))
+          .orderBy(asc(promotionDailyStats.day))
+      : [];
+    const today = daily.find((row) => row.day === utcDay());
+
+    return res.status(200).json({
+      promotion,
+      spentTodayCents: today?.spendCents ?? 0,
+      daily
+    });
+  })
+);
+
+employerJobsRouter.put(
+  "/:id/promotion",
+  validateParams(idParamsSchema),
+  validateBody(promotionUpsertSchema),
+  asyncHandler(async (req, res) => {
+    const input = req.body as PromotionUpsertInput;
+    const job = await findCompanyJob(req.company!.id, String(req.params.id));
+    if (!job) {
+      return res.status(404).json({ error: "Job not found" });
+    }
+    if (input.status === "active" && !isJobOpen(job)) {
+      return res.status(422).json({ error: "Publish the job before promoting it", reasons: { status: "Job is not live" } });
+    }
+
+    const [promotion] = await db
+      .insert(promotions)
+      .values({ ...input, jobId: job.id, companyId: req.company!.id })
+      .onConflictDoUpdate({
+        target: promotions.jobId,
+        set: { ...input, updatedAt: new Date() }
+      })
+      .returning();
+
+    return res.status(200).json({ promotion });
   })
 );

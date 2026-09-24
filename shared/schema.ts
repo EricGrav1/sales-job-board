@@ -2,6 +2,8 @@ import { relations, sql, type InferInsertModel, type InferSelectModel } from "dr
 import {
   type AnyPgColumn,
   boolean,
+  check,
+  date,
   index,
   integer,
   pgEnum,
@@ -173,7 +175,10 @@ export const companies = pgTable("companies", {
   creditBalanceCents: integer("credit_balance_cents").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
-});
+}, (table) => [
+  // Backstop for the charging code: the database itself refuses a negative balance.
+  check("companies_credit_balance_non_negative", sql`${table.creditBalanceCents} >= 0`)
+]);
 
 export const companyMembers = pgTable(
   "company_members",
@@ -273,6 +278,74 @@ export const applications = pgTable(
   (table) => [unique("applications_job_user_unique").on(table.jobId, table.userId), index("applications_user_idx").on(table.userId)]
 );
 
+export const promotionStatusEnum = pgEnum("promotion_status", ["active", "paused"]);
+export const creditLedgerTypeEnum = pgEnum("credit_ledger_type", ["topup", "click", "adjustment"]);
+
+export const promotions = pgTable("promotions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  jobId: uuid("job_id")
+    .notNull()
+    .unique()
+    .references(() => jobs.id, { onDelete: "cascade" }),
+  companyId: uuid("company_id")
+    .notNull()
+    .references(() => companies.id, { onDelete: "cascade" }),
+  status: promotionStatusEnum("status").notNull().default("active"),
+  dailyBudgetCents: integer("daily_budget_cents").notNull(),
+  cpcCents: integer("cpc_cents").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+});
+
+// One row per promotion per UTC day. Powers both analytics and daily-budget enforcement.
+export const promotionDailyStats = pgTable(
+  "promotion_daily_stats",
+  {
+    promotionId: uuid("promotion_id")
+      .notNull()
+      .references(() => promotions.id, { onDelete: "cascade" }),
+    day: date("day").notNull(),
+    impressions: integer("impressions").notNull().default(0),
+    clicks: integer("clicks").notNull().default(0),
+    chargedClicks: integer("charged_clicks").notNull().default(0),
+    spendCents: integer("spend_cents").notNull().default(0)
+  },
+  (table) => [primaryKey({ columns: [table.promotionId, table.day] })]
+);
+
+// Audit trail + de-duplication: one row per (promotion, day, viewer).
+export const promotionClicks = pgTable(
+  "promotion_clicks",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    promotionId: uuid("promotion_id")
+      .notNull()
+      .references(() => promotions.id, { onDelete: "cascade" }),
+    day: date("day").notNull(),
+    viewerHash: text("viewer_hash").notNull(), // HMAC, never a raw IP
+    chargedCents: integer("charged_cents").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => [unique("promotion_clicks_viewer_day_unique").on(table.promotionId, table.day, table.viewerHash)]
+);
+
+// Source of truth for credits; companies.creditBalanceCents is a cache updated in the same transaction.
+export const creditLedger = pgTable(
+  "credit_ledger",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    amountCents: integer("amount_cents").notNull(),
+    type: creditLedgerTypeEnum("type").notNull(),
+    stripeCheckoutSessionId: text("stripe_checkout_session_id").unique(),
+    promotionClickId: uuid("promotion_click_id").references(() => promotionClicks.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => [index("credit_ledger_company_idx").on(table.companyId, table.createdAt)]
+);
+
 export const jobsRelations = relations(jobs, ({ one, many }) => ({
   company: one(companies, {
     fields: [jobs.companyId],
@@ -329,3 +402,5 @@ export type Company = InferSelectModel<typeof companies>;
 export type CompanyMember = InferSelectModel<typeof companyMembers>;
 export type Job = InferSelectModel<typeof jobs>;
 export type Application = InferSelectModel<typeof applications>;
+export type Promotion = InferSelectModel<typeof promotions>;
+export type CreditLedgerEntry = InferSelectModel<typeof creditLedger>;

@@ -6,6 +6,7 @@ import { requireAuth, requireEmailVerified, requireRole } from "../middleware/au
 import { applyRateLimit, uploadRateLimit } from "../middleware/rateLimit";
 import { validateBody, validateParams } from "../middleware/validate";
 import { isJobOpen } from "../services/jobRules";
+import { findOpenJobBySlug } from "../services/jobSearch";
 import { toPublicJob } from "../services/jobViews";
 import { createPresignedUploadUrl, createSignedGetUrl } from "../services/r2";
 import { asyncHandler, isUniqueViolation } from "../utils/http";
@@ -17,7 +18,6 @@ import {
   resumeUploadSchema,
   type ApplyInput
 } from "../../shared/validators";
-import { findOpenJobBySlug } from "./jobs";
 
 const seekerOnly = [asyncHandler(requireAuth), requireEmailVerified, requireRole("rep")];
 
