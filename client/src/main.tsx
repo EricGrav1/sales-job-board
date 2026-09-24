@@ -4,6 +4,7 @@ import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
 import { Layout, PageContainer } from "./components/Layout";
 import { RequireRole } from "./components/RequireRole";
 import { AuthProvider } from "./lib/auth";
+import { BillingPage } from "./pages/employer/BillingPage";
 import { EmployerDashboardPage } from "./pages/employer/EmployerDashboardPage";
 import { EmployerJobPage } from "./pages/employer/EmployerJobPage";
 import { JobFormPage } from "./pages/employer/JobFormPage";
@@ -54,6 +55,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               }
             />
             {[
+              ["/employer/billing", <BillingPage key="billing" />],
               ["/employer/jobs/new", <JobFormPage key="new" />],
               ["/employer/jobs/:id/edit", <JobFormPage key="edit" />],
               ["/employer/jobs/:id", <EmployerJobPage key="job" />]

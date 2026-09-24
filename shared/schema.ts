@@ -346,6 +346,13 @@ export const creditLedger = pgTable(
   (table) => [index("credit_ledger_company_idx").on(table.companyId, table.createdAt)]
 );
 
+// Webhook idempotency: Stripe retries deliveries, so each event id is processed at most once.
+export const stripeEvents = pgTable("stripe_events", {
+  id: text("id").primaryKey(),
+  type: text("type").notNull(),
+  processedAt: timestamp("processed_at", { withTimezone: true }).notNull().defaultNow()
+});
+
 export const jobsRelations = relations(jobs, ({ one, many }) => ({
   company: one(companies, {
     fields: [jobs.companyId],

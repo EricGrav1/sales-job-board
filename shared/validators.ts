@@ -7,6 +7,7 @@ import {
   jobLevelValues,
   workplaceValues
 } from "./jobs";
+import { CREDIT_PACKS_CENTS } from "./billing";
 import { MAX_CPC_CENTS, MAX_DAILY_BUDGET_CENTS, MIN_CPC_CENTS, MIN_DAILY_BUDGET_CENTS } from "./promotions";
 
 const normalizedEmail = z
@@ -217,6 +218,13 @@ export const promotionUpsertSchema = z
     message: "Cost per click can't exceed the daily budget",
     path: ["cpcCents"]
   });
+
+export const creditsCheckoutSchema = z.object({
+  amountCents: z
+    .number()
+    .int()
+    .refine((value) => (CREDIT_PACKS_CENTS as readonly number[]).includes(value), { message: "Choose one of the credit packs" })
+});
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
