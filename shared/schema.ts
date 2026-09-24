@@ -1,6 +1,8 @@
 import { relations, sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
+  index,
   integer,
   pgEnum,
   primaryKey,
@@ -10,6 +12,7 @@ import {
   uuid,
   varchar
 } from "drizzle-orm/pg-core";
+import { compTypeValues, employmentTypeValues, jobCategoryValues, jobLevelValues, workplaceValues } from "./jobs";
 
 export const userRoleEnum = pgEnum("user_role", ["rep", "employer", "admin"]);
 export const roleTypeEnum = pgEnum("role_type", ["sdr", "ae", "am", "field", "inside", "manager", "other"]);
@@ -20,7 +23,15 @@ export const verificationTierEnum = pgEnum("verification_tier", [
 ]);
 export const proofTypeEnum = pgEnum("proof_type", ["leaderboard", "commission", "award", "other"]);
 export const proofStatusEnum = pgEnum("proof_status", ["pending", "approved", "rejected"]);
-export const eventTypeEnum = pgEnum("event_type", ["profile_view", "proof_view", "signup", "publish"]);
+export const eventTypeEnum = pgEnum("event_type", [
+  "profile_view",
+  "proof_view",
+  "signup",
+  "publish",
+  "job_view",
+  "job_apply",
+  "job_publish"
+]);
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -179,8 +190,66 @@ export const companyMembers = pgTable(
   (table) => [primaryKey({ columns: [table.companyId, table.userId] })]
 );
 
+export const jobCategoryEnum = pgEnum("job_category", jobCategoryValues);
+export const jobLevelEnum = pgEnum("job_level", jobLevelValues);
+export const employmentTypeEnum = pgEnum("employment_type", employmentTypeValues);
+export const workplaceEnum = pgEnum("workplace", workplaceValues);
+export const compTypeEnum = pgEnum("comp_type", compTypeValues);
+export const applyMethodEnum = pgEnum("apply_method", ["platform", "external"]);
+export const jobStatusEnum = pgEnum("job_status", ["draft", "published", "closed"]);
+
+// Drafts may be incomplete, so most columns are nullable; publish rules (SPEC §6) enforce completeness.
+export const jobs = pgTable(
+  "jobs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    createdByUserId: uuid("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    slug: text("slug").notNull().unique(),
+    title: varchar("title", { length: 120 }).notNull(),
+    category: jobCategoryEnum("category"),
+    level: jobLevelEnum("level"),
+    employmentType: employmentTypeEnum("employment_type"),
+    workplace: workplaceEnum("workplace"),
+    location: varchar("location", { length: 160 }),
+    compType: compTypeEnum("comp_type"),
+    baseMin: integer("base_min"),
+    baseMax: integer("base_max"),
+    oteMin: integer("ote_min"),
+    oteMax: integer("ote_max"),
+    description: text("description"),
+    applyMethod: applyMethodEnum("apply_method").notNull().default("platform"),
+    applyUrl: text("apply_url"),
+    status: jobStatusEnum("status").notNull().default("draft"),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => [
+    index("jobs_search_idx").using("gin", jobSearchVector(table)),
+    index("jobs_listing_idx").on(table.status, table.expiresAt, table.publishedAt),
+    index("jobs_company_idx").on(table.companyId)
+  ]
+);
+
+// The search query must use this exact expression so Postgres can use jobs_search_idx.
+export function jobSearchVector(table: { title: AnyPgColumn; description: AnyPgColumn; location: AnyPgColumn }) {
+  return sql`to_tsvector('english', coalesce(${table.title}, '') || ' ' || coalesce(${table.description}, '') || ' ' || coalesce(${table.location}, ''))`;
+}
+
+export const jobsRelations = relations(jobs, ({ one }) => ({
+  company: one(companies, {
+    fields: [jobs.companyId],
+    references: [companies.id]
+  })
+}));
+
 export const companiesRelations = relations(companies, ({ many }) => ({
-  members: many(companyMembers)
+  members: many(companyMembers),
+  jobs: many(jobs)
 }));
 
 export const companyMembersRelations = relations(companyMembers, ({ one }) => ({
@@ -209,3 +278,4 @@ export type ProofItem = InferSelectModel<typeof proofItems>;
 export type Event = InferSelectModel<typeof events>;
 export type Company = InferSelectModel<typeof companies>;
 export type CompanyMember = InferSelectModel<typeof companyMembers>;
+export type Job = InferSelectModel<typeof jobs>;

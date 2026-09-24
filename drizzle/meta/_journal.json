@@ -15,6 +15,13 @@
       "when": 1790214527385,
       "tag": "0001_m7_employers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790214849591,
+      "tag": "0002_m8_jobs",
+      "breakpoints": true
     }
   ]
 }

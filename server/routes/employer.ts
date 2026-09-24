@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { requireAuth, requireEmailVerified, requireRole } from "../middleware/auth";
 import { validateBody } from "../middleware/validate";
+import { employerJobsRouter } from "./employerJobs";
 import { findAvailableCompanySlug, findCompanyForUser, requireCompany } from "../services/companies";
 import { asyncHandler, isUniqueViolation } from "../utils/http";
 import { companies, companyMembers } from "../../shared/schema";
@@ -82,3 +83,5 @@ employerRouter.put(
     return res.status(200).json({ company });
   })
 );
+
+employerRouter.use("/jobs", asyncHandler(requireCompany), employerJobsRouter);

@@ -1,4 +1,12 @@
 import { z } from "zod";
+import {
+  JOB_DESCRIPTION_MAX,
+  compTypeValues,
+  employmentTypeValues,
+  jobCategoryValues,
+  jobLevelValues,
+  workplaceValues
+} from "./jobs";
 
 const normalizedEmail = z
   .string()
@@ -106,6 +114,57 @@ export const companyUpsertSchema = z.object({
   sizeBand: companySizeBandSchema.nullable().optional()
 });
 
+const payAmount = z.number().int().min(0).max(10_000_000).nullable().optional();
+
+function rangeOrdered(min: number | null | undefined, max: number | null | undefined) {
+  return min == null || max == null || min <= max;
+}
+
+// Drafts can be partial; completeness is checked at publish time (server/services/jobRules.ts).
+export const jobUpsertSchema = z
+  .object({
+    title: z.string().trim().min(1).max(120),
+    category: z.enum(jobCategoryValues).nullable().optional(),
+    level: z.enum(jobLevelValues).nullable().optional(),
+    employmentType: z.enum(employmentTypeValues).nullable().optional(),
+    workplace: z.enum(workplaceValues).nullable().optional(),
+    location: z.string().trim().max(160).nullable().optional(),
+    compType: z.enum(compTypeValues).nullable().optional(),
+    baseMin: payAmount,
+    baseMax: payAmount,
+    oteMin: payAmount,
+    oteMax: payAmount,
+    description: z.string().trim().max(JOB_DESCRIPTION_MAX).nullable().optional(),
+    applyMethod: z.enum(["platform", "external"]).default("platform"),
+    applyUrl: httpsUrl.nullable().optional()
+  })
+  .refine((data) => rangeOrdered(data.baseMin, data.baseMax), {
+    message: "Base minimum must be less than or equal to base maximum",
+    path: ["baseMin"]
+  })
+  .refine((data) => rangeOrdered(data.oteMin, data.oteMax), {
+    message: "OTE minimum must be less than or equal to OTE maximum",
+    path: ["oteMin"]
+  });
+
+export const idParamsSchema = z.object({
+  id: z.string().uuid()
+});
+
+const optionalQueryEnum = <T extends readonly [string, ...string[]]>(values: T) =>
+  z.preprocess((value) => (value === "" ? undefined : value), z.enum(values).optional());
+
+export const jobSearchQuerySchema = z.object({
+  q: z.string().trim().max(200).optional(),
+  category: optionalQueryEnum(jobCategoryValues),
+  level: optionalQueryEnum(jobLevelValues),
+  workplace: optionalQueryEnum(workplaceValues),
+  employmentType: optionalQueryEnum(employmentTypeValues),
+  minOte: z.preprocess((value) => (value === "" ? undefined : value), z.coerce.number().int().min(0).max(10_000_000).optional()),
+  location: z.string().trim().max(160).optional(),
+  page: z.coerce.number().int().min(1).max(500).default(1)
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
@@ -118,3 +177,5 @@ export type AdminProofsQueryInput = z.infer<typeof adminProofsQuerySchema>;
 export type ProofRejectInput = z.infer<typeof proofRejectSchema>;
 export type AccountType = z.infer<typeof accountTypeSchema>;
 export type CompanyUpsertInput = z.infer<typeof companyUpsertSchema>;
+export type JobUpsertInput = z.infer<typeof jobUpsertSchema>;
+export type JobSearchQuery = z.infer<typeof jobSearchQuerySchema>;

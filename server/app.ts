@@ -8,6 +8,7 @@ import { pool } from "./db";
 import { adminRouter } from "./routes/admin";
 import { authRouter } from "./routes/auth";
 import { employerRouter } from "./routes/employer";
+import { jobsRouter } from "./routes/jobs";
 import { profileRouter } from "./routes/profile";
 import { proofsRouter } from "./routes/proofs";
 import { publicProfileRouter } from "./routes/publicProfile";
@@ -55,6 +56,7 @@ export function createApp() {
   app.use("/api/proofs", proofsRouter);
   app.use("/api/admin", adminRouter);
   app.use("/api/employer", employerRouter);
+  app.use("/api/jobs", jobsRouter);
   app.use("/api/r", publicProfileRouter);
 
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {

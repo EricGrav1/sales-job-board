@@ -5,6 +5,10 @@ import { Layout, PageContainer } from "./components/Layout";
 import { RequireRole } from "./components/RequireRole";
 import { AuthProvider } from "./lib/auth";
 import { EmployerDashboardPage } from "./pages/employer/EmployerDashboardPage";
+import { EmployerJobPage } from "./pages/employer/EmployerJobPage";
+import { JobFormPage } from "./pages/employer/JobFormPage";
+import { JobDetailPage } from "./pages/JobDetailPage";
+import { JobsPage } from "./pages/JobsPage";
 import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { ProfileEditPage } from "./pages/ProfileEditPage";
@@ -38,6 +42,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/verify" element={<VerifyPage />} />
+            <Route path="/jobs" element={<JobsPage />} />
+            <Route path="/jobs/:slug" element={<JobDetailPage />} />
             <Route
               path="/employer"
               element={
@@ -46,6 +52,17 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                 </RequireRole>
               }
             />
+            {[
+              ["/employer/jobs/new", <JobFormPage key="new" />],
+              ["/employer/jobs/:id/edit", <JobFormPage key="edit" />],
+              ["/employer/jobs/:id", <EmployerJobPage key="job" />]
+            ].map(([path, element]) => (
+              <Route
+                key={path as string}
+                path={path as string}
+                element={<RequireRole roles={["employer"]}>{element}</RequireRole>}
+              />
+            ))}
             <Route path="/dashboard/*" element={<PlaceholderPage title="Dashboard" />} />
             <Route path="/admin" element={<PlaceholderPage title="Admin" />} />
             <Route path="*" element={<NotFoundPage />} />

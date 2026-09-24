@@ -29,3 +29,19 @@ export function validateParams<TSchema extends ZodTypeAny>(schema: TSchema) {
     return next();
   };
 }
+
+// Parses req.query and stores the typed result on res.locals.query (req.query is read-only in Express 5 style).
+export function validateQuery<TSchema extends ZodTypeAny>(schema: TSchema) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const parsed = schema.safeParse(req.query);
+    if (!parsed.success) {
+      return res.status(400).json({
+        error: "Validation failed",
+        fields: parsed.error.flatten().fieldErrors
+      });
+    }
+
+    res.locals.query = parsed.data as z.infer<TSchema>;
+    return next();
+  };
+}
