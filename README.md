@@ -8,16 +8,18 @@ Hiring salespeople is broken in a specific way: every resume says "President's C
 
 This platform flips that. Reps upload proof of their numbers, an admin review process verifies it, and their public profile carries a verification tier that means something.
 
-## What's built (Phase 1 — rep side MVP)
+## What's built
 
-- **Auth** — email/password registration with email verification, session-based login (`express-session` + Postgres store, bcrypt)
-- **Rep profiles** — role type, industries, years of experience, OTE range, location/remote, publish control, public page at `/r/:slug`
-- **Performance records** — per-period quota attainment, rank, team size, with validation (0–500% attainment enforced)
-- **Proof uploads** — screenshots go to Cloudflare R2 via presigned URLs; EXIF metadata is stripped and thumbnails generated with `sharp`; originals are **never** served publicly
-- **Admin review** — pending-proof queue with signed access to originals, approve/reject with email notifications, redacted public versions
-- **Verification tiers** — `unverified → self_reported → verified`, computed from approved proof
-- **Analytics events** — profile views tracked from day one
-- **Seed data** — `npm run seed` creates an admin plus 10 realistic rep profiles across all tiers
+**Phase 2: employer-paid job board** (`SPEC.md`, milestones M7–M12)
+
+- **Sales jobs from SDR to CRO.** Levels (entry → executive), role categories, workplace, and **required pay ranges** (base, OTE, commission-only, or salary-only) on every listing
+- **Search** with keyword (Postgres full-text), role, level, workplace, job type, min OTE and location filters
+- **Employer accounts.** Company profile, draft → publish → close/renew (30-day listings), applicant pipeline with PDF resumes served via short-lived signed URLs
+- **Sponsored jobs (the revenue engine).** Employers set a daily budget and cost per click, paid from prepaid credits. Up to 3 labeled sponsored slots per search, highest bid first. Charged once per viewer per day, never over budget, never below a $0 balance (row-locked transaction + DB check constraint)
+- **Stripe billing.** Credit packs via Checkout, a Premium subscription (25 active jobs + badge vs 1 on free) with a 3-month launch coupon, and signature-verified, idempotent webhooks
+- **Job seekers.** Free accounts, one-click apply with resume, application status tracker
+
+**Phase 1: verified rep profiles** (`docs/SPEC-phase1-rep-profiles.md`): profiles, performance records, proof uploads with EXIF stripping, admin review, verification tiers. An applicant's published profile is linked on their applications.
 
 ## Tech stack
 
@@ -50,12 +52,17 @@ Requires Node 20+, PostgreSQL 15+.
 ```bash
 npm install
 cp .env.example .env   # fill in DATABASE_URL, SESSION_SECRET, etc.
-npm run seed           # optional: admin + sample rep profiles
+npm run seed           # optional: admin, 10 rep profiles, 3 employers, 15 jobs
 npm run dev            # starts API + Vite client
-npm test               # vitest + supertest suite
+TEST_DATABASE_URL=postgres://user:pass@localhost:5432/sales_job_board_test npm test
 ```
 
-R2 and Resend credentials are optional in dev — email verification links are logged to the console instead.
+Credentials that are optional in dev:
+- **Resend**: verification links are logged to the console.
+- **Stripe**: with `placeholder…` keys, credit and Premium checkouts are fulfilled locally and logged as `[dev-billing]`. Placeholder Stripe keys are refused at boot in production.
+- **R2**: needed for resume and proof uploads. Without it, uploads fail with a clear message and applying without a resume still works.
+
+Seed logins: employers `talent@northwind-security.example.com` (and 2 others) / `employer1234!`, reps / `rep1234!`.
 
 ## Why I built this
 
@@ -63,4 +70,4 @@ I lead sales teams and hire salespeople. The gap between what a resume claims an
 
 ## Roadmap
 
-Phase 1 is rep-side only — no employer accounts, payments, or messaging yet. Those are the next phases.
+Parked for later (see `docs/PARKED-metrics-engine.md`): a structured metrics engine (numbers over any period), CSV and Salesforce imports, and premium access to rep dollar figures. Not built yet: messaging, job alerts, recruiter seats, click-fraud detection beyond per-viewer dedupe and budget caps.

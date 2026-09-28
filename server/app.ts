@@ -6,7 +6,11 @@ import helmet from "helmet";
 import { getEnv } from "./config/env";
 import { pool } from "./db";
 import { adminRouter } from "./routes/admin";
+import { applyHandlers, seekerApplicationsRouter } from "./routes/applications";
 import { authRouter } from "./routes/auth";
+import { billingRouter, stripeWebhookHandlers } from "./routes/billing";
+import { employerRouter } from "./routes/employer";
+import { jobsRouter } from "./routes/jobs";
 import { profileRouter } from "./routes/profile";
 import { proofsRouter } from "./routes/proofs";
 import { publicProfileRouter } from "./routes/publicProfile";
@@ -25,6 +29,8 @@ export function createApp() {
       credentials: true
     })
   );
+  // Stripe webhooks need the raw body for signature checks, so they're registered before the JSON parser.
+  app.post("/api/billing/webhook", ...stripeWebhookHandlers);
   app.use(express.json({ limit: "1mb" }));
   app.use(
     session({
@@ -53,6 +59,11 @@ export function createApp() {
   app.use("/api/records", recordsRouter);
   app.use("/api/proofs", proofsRouter);
   app.use("/api/admin", adminRouter);
+  app.use("/api/employer", employerRouter);
+  app.post("/api/jobs/:slug/apply", ...applyHandlers);
+  app.use("/api/jobs", jobsRouter);
+  app.use("/api/applications", seekerApplicationsRouter);
+  app.use("/api/billing", billingRouter);
   app.use("/api/r", publicProfileRouter);
 
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {

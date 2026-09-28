@@ -22,3 +22,14 @@ export function uploadRateLimit() {
     message: { error: "Too many uploads" }
   });
 }
+
+export function applyRateLimit() {
+  return rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => req.currentUser!.id,
+    message: { error: "Too many applications. Try again later." }
+  });
+}

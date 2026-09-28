@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { eq } from "drizzle-orm";
 import { db } from "../db";
-import { users } from "../../shared/schema";
+import { users, type User } from "../../shared/schema";
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const userId = req.session.userId;
@@ -44,4 +44,14 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
 
   req.currentUser = user;
   return next();
+}
+
+export function requireRole(...roles: Array<User["role"]>) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.currentUser || !roles.includes(req.currentUser.role)) {
+      return res.status(403).json({ error: "This account type cannot access this resource" });
+    }
+
+    return next();
+  };
 }

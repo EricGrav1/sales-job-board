@@ -6,9 +6,10 @@ import { authAttemptRateLimit } from "../middleware/rateLimit";
 import { requireAuth } from "../middleware/auth";
 import { validateBody } from "../middleware/validate";
 import { getEnv } from "../config/env";
+import { findCompanyForUser } from "../services/companies";
 import { sendVerificationEmail } from "../services/email";
 import { createEmailVerificationToken, verifyEmailVerificationToken } from "../services/verificationToken";
-import { asyncHandler, publicUser } from "../utils/http";
+import { asyncHandler, isUniqueViolation, publicUser } from "../utils/http";
 import { events, repProfiles, users } from "../../shared/schema";
 import { loginSchema, registerSchema, verifyEmailSchema } from "../../shared/validators";
 
@@ -46,7 +47,7 @@ authRouter.post(
   validateBody(registerSchema),
   asyncHandler(async (req, res) => {
     const env = getEnv();
-    const { email, password } = req.body;
+    const { email, password, accountType } = req.body;
     const existingUser = await db.query.users.findFirst({
       where: eq(users.email, email)
     });
@@ -56,7 +57,7 @@ authRouter.post(
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
-    const role = email === env.ADMIN_EMAIL ? "admin" : "rep";
+    const role = email === env.ADMIN_EMAIL ? "admin" : accountType === "employer" ? "employer" : "rep";
 
     try {
       const [user] = await db
@@ -78,7 +79,7 @@ authRouter.post(
 
       return res.status(201).json({ user: publicUser(user) });
     } catch (error) {
-      if (error && typeof error === "object" && "code" in error && error.code === "23505") {
+      if (isUniqueViolation(error)) {
         return res.status(409).json({ error: "Email already registered" });
       }
       throw error;
@@ -149,13 +150,17 @@ authRouter.get(
   "/me",
   asyncHandler(requireAuth),
   asyncHandler(async (req, res) => {
-    const profile = await db.query.repProfiles.findFirst({
-      where: eq(repProfiles.userId, req.currentUser!.id)
-    });
+    const [profile, company] = await Promise.all([
+      db.query.repProfiles.findFirst({
+        where: eq(repProfiles.userId, req.currentUser!.id)
+      }),
+      findCompanyForUser(req.currentUser!.id)
+    ]);
 
     return res.status(200).json({
       user: publicUser(req.currentUser!),
-      profile: profile ?? null
+      profile: profile ?? null,
+      company
     });
   })
 );

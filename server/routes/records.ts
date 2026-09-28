@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { and, eq } from "drizzle-orm";
 import { db } from "../db";
-import { requireAuth, requireEmailVerified } from "../middleware/auth";
+import { requireAuth, requireEmailVerified, requireRole } from "../middleware/auth";
 import { validateBody, validateParams } from "../middleware/validate";
 import { recomputeVerificationTier } from "../services/verificationTier";
 import { asyncHandler } from "../utils/http";
@@ -14,7 +14,7 @@ import {
 
 export const recordsRouter = Router();
 
-recordsRouter.use(asyncHandler(requireAuth), requireEmailVerified);
+recordsRouter.use(asyncHandler(requireAuth), requireEmailVerified, requireRole("rep", "admin"));
 
 async function findOwnProfile(userId: string) {
   return db.query.repProfiles.findFirst({
